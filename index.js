@@ -3,6 +3,7 @@ const app = express();
 const mysql = require('mysql');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const port = 3000;
 
 require('dotenv').config();
 app.use(bodyParser.urlencoded({extended:true}));
@@ -10,29 +11,37 @@ app.use(bodyParser.json());
 app.use(cors());
 
 const conn = {
-  host : '127.0.0.1',
-  port : '3306',
-  user : 'root',
+  host : process.env.db_host,
+  port : process.env.db_port,
+  user : process.env.db_user,
   password : process.env.db_password,
-  database : 'travel_planner'
+  database : process.env.db_database
 };
 
 const connection = mysql.createConnection(conn);
 
 connection.connect();
-console.log('db success');
+console.log('db success, port:'+port);
+
 
 //내 일정 부분에 일정 보여주기
-app.get('/', (req, res) => {
-    connection.query('select * from travel_planner.location',function(error,results,fields) {
-  res.send(results);
-    console.log(results);
-  })
+app.get('/location', (req,res) => {
+  connection.query('select id, turn, location_name, address, mapx, mapy from travel_planner.location order by turn',function(error,results,fields) {
+    res.send(results);
+    if (error) {
+      console.log('db connection error');
+      res.statusCode(500);
+    }
+  });
 });
 
 //search_api 에서 찾은 결과를 내 일정에 추가하기
-app.post('/add', (req,res) => {
-  let datas = [
+app.post('/location', (req,res) => {
+  if(!req.body.turn || !req.body.location_name || !req.body.address || !req.body.mapx || !req.body.mapy) {
+    res.status(400);
+    res.end();
+  } else {
+    let datas = [
       req.body.turn,
       req.body.location_name,
       req.body.address,
@@ -40,37 +49,61 @@ app.post('/add', (req,res) => {
       req.body.mapy
   ];
   connection.query("insert into location values(null,?,?,?,?,?,now(),now())",datas, function (error, results, fields) {
-      // if (error) throw error;
-  //     res.redirect('http://localhost:3000/list');
-  res.send('post complete')
+      if (error) {
+        console.log('db connection error');
+        res.statusCode(500);
+      }
+    res.status(201);
+    res.end();
   });
+  }
 });
 
-app.delete('/:id',(req,res) => {
-  let id = req.params.id;
+//일정 삭제
+app.delete('/location:id',(req,res) => {
+  if (!req.params.id) {
+    res.status(400);
+    res.end();
+  } else {
+    let id = req.params.id;
   connection.query("delete from travel_planner.location where id = ?;",id, function (error, results, fields) {
-    if (error) throw error;
-    res.send('delete complete');
+    res.status(200);
+    res.end();
+    if (error) {
+      console.log('db connection error');
+      res.statusCode(500);
+    }
   });
+  }
 });
 
-app.put('/', (req,res) => {
-  let datas = [
-      req.body.turn,
-      req.body.location_name,
-      req.body.address,
-      req.body.mapx,
-      req.body.mapy,
-      req.body.id
+//일정 순서 바꾸기
+app.put('/location', (req,res) => {
+  let fst_datas = [
+      req.body.fst_turn,
+      req.body.fst_id
   ];
-  let sda = [
-
+  let snd_datas = [
+    req.body.snd_turn,
+    req.body.snd_id
   ]
-  console.log('data:',datas)
-  connection.query("update travel_planner.location set turn = ?, location_name = ?, address = ?, mapx = ?, mpay = ? where id = ?",datas,function (error, results, fields) {
-      if (error) throw error;
-  res.send('post complete')
+  connection.query("update travel_planner.location set turn = ? where id = ?",fst_datas,function (error, results, fields) {
+    if (error) {
+      console.log('db connection error');
+      res.status(500);
+      res.end();
+    }
   });
-})
+  connection.query("update travel_planner.location set turn = ? where id = ?",snd_datas,function (error, results, fields) {
+    if (error) {
+      console.log('db connection error');
+      res.status(500);
+      res.end();
+    }
+  });
+  res.status(200);
+  res.end();
+});
+  
 
-app.listen(3000)
+app.listen(port);
