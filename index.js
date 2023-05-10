@@ -15,22 +15,33 @@ app.use(cors());
 const db_database = !module.parent ? process.env.db_database : process.env.db_database_test
 const conn = {
   host : process.env.db_host,
-  port : process.env.db_port,
+  // port : process.env.db_port,
   user : process.env.db_user,
   password : process.env.db_password,
-  database : db_database
+  database : db_database,
+  connectionLimit : 10
 };
 
-const connection = mysql.createConnection(conn);
-connection.connect();
+const pool = mysql.createPool(conn);
+
+// const connection = mysql.createConnection(conn);
+// connection.connect();
+
 //내 일정 부분에 일정 보여주기
 app.get('/location', (req,res) => {
-  connection.query('select id, turn, location_name, address, mapx, mapy from location order by turn',function(error,results,fields) {
-    if (error) {
-      console.log('db connection error');
+  pool.getConnection((err,connection) => {
+    if(err) {
+      console.log('pool.getConnection error');
       res.status(500).end();
     }
-    res.status(200).send(results);
+    connection.query('select id, turn, location_name, address, mapx, mapy from location order by turn',function(error,results,fields) {
+      if (err) {
+        console.log('db connection error');
+        res.status(500).end();
+      }
+      res.status(200).send(results);
+    });
+    connection.release();
   });
 });
 
@@ -47,12 +58,19 @@ app.post('/location', (req,res) => {
       input.mapx,
       input.mapy
   ];
-  connection.query("insert into location values(null,?,?,?,?,?,now(),now())",datas, function (error, results, fields) {
-    if (error) {
-      console.log('db connection error');
+  pool.getConnection((err,connection) => {
+    if(err) {
+      console.log('pool.getConnection error');
       res.status(500).end();
     }
-    res.status(201).end();
+    connection.query("insert into location values(null,?,?,?,?,?,now(),now())",datas, function (error, results, fields) {
+      if (error) {
+        console.log('db connection error');
+        res.status(500).end();
+      }
+      res.status(201).end();
+    });
+    connection.release();
   });
   }
 });
@@ -63,12 +81,19 @@ app.delete('/location:id',(req,res) => {
     res.status(400).end();
   } else {
     let id = req.params.id;
-    connection.query("delete from location where id = ?;",id, function (error, results, fields) {
-      if (error) {
-        console.log('db connection error');
+    pool.getConnection((err,connection) => {
+      if(err) {
+        console.log('pool.getConnection error');
         res.status(500).end();
       }
-      res.status(200).end();
+      connection.query("delete from location where id = ?;",id, function (error, results, fields) {
+        if (error) {
+          console.log('db connection error');
+          res.status(500).end();
+        }
+        res.status(200).end();
+      });
+      connection.release();
     });
   }
 });
@@ -83,20 +108,26 @@ app.put('/location', (req,res) => {
     req.body.snd_turn,
     req.body.snd_id
   ]
-  connection.query("update location set turn = ? where id = ?",fst_datas,function (error, results, fields) {
-    if (error) {
-      console.log('db connection error');
+  pool.getConnection((err,connection) => {
+    if(err) {
+      console.log('pool.getConnection error');
       res.status(500).end();
     }
-    connection.query("update location set turn = ? where id = ?",snd_datas,function (error, results, fields) {
+    connection.query("update location set turn = ? where id = ?",fst_datas,function (error, results, fields) {
       if (error) {
         console.log('db connection error');
         res.status(500).end();
       }
-      res.status(200).end();
+      connection.query("update location set turn = ? where id = ?",snd_datas,function (error, results, fields) {
+        if (error) {
+          console.log('db connection error');
+          res.status(500).end();
+        }
+        res.status(200).end();
+      });
+    });
+    connection.release();
   });
-  });
-
 });
 
 
@@ -113,3 +144,11 @@ if (!module.parent) {
 
 module.exports = app;
 
+
+// 질문 :커넥션 끊으면 (res.send()로 다른 데이터는 보내짐, 상태코드도 잘 보내짐) 근데 results 만 안보내지는 이유는 db커넥션이 필요한 작업이라서?
+// 답 : db를 다녀오는 것은 비동기처리가 필요한 작업이다 마지막에 커넥션.end을 쓰게 되면 db다녀오기전에 커넥션이 끊어져 데이터를 받아올 수 없다.
+// send등의 작업은 빠르게 실행가능해 end()전 바로 실행되기 때문에 문제없이 보내졌다.
+
+
+// connection.end(); 커넥션.end을 마지막에 넣게되면 서버가 제대로 db에서 데이터를 받아오지 못한다. db를 받아오기전에 닫혀버리기때문.
+// 따라서 각 요청별 db작업 후 따로 커넥션을 끊어줘야 서버도 제대로 수행되고 테스트시에도 커넥션이 안끊기고 계속 대기 되는 상황없이 테스트를 무사히 종료 시킬 수 있다.
