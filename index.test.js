@@ -37,7 +37,7 @@ describe('e2e_Test', () => {
     it('get_test', (done) => {
       console.log('test')
       let get_datas = {
-        turn:5,
+        turn:6,
         location_name:"tteesstt",
         address:"tteesst",
         mapx:22,
@@ -65,23 +65,23 @@ describe('e2e_Test', () => {
   describe("post/location", () => {
     it("post/location", async () => {
       let post_datas = {
-        turn:3,
+        turn:4,
         location_name:"post_name",
         address:"post",
         mapx:11,
         mapy:11
       };
-      const res = await request(app)
+      //post 요청 후 get 요청해 데이터 받아와 잘들어갔는지 post_datas와 비교
+      const post_res = await request(app)
         .post("/location")
         .set("Accept", "application/json")
         .send(post_datas)
-        expect(res.status).toBe(201);
-        console.log('body',res.body);
-        expect(res.body[0]).toBe(post_datas.turn);
-        expect(res.body[1]).toBe(post_datas.location_name);
-        expect(res.body[2]).toBe(post_datas.address);
-        expect(res.body[3]).toBe(post_datas.mapx);
-        expect(res.body[4]).toBe(post_datas.mapy);
+        expect(post_res.status).toBe(201);
+      const res = await request(app)
+        .get("/location")
+        delete res.body[0].id
+        expect(res.body[0]).toStrictEqual(post_datas)
+        // expect(res.status).toBe(201);
     })
   });
 })
