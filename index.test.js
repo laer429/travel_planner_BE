@@ -62,4 +62,70 @@ describe('e2e_Test', () => {
       );
     });
   });  
+  describe("post/location", () => {
+    it("post/location", async () => {
+      let post_datas = {
+        turn:3,
+        location_name:"post_name",
+        address:"post",
+        mapx:11,
+        mapy:11
+      };
+      const res = await request(app)
+        .post("/location")
+        .set("Accept", "application/json")
+        .send(post_datas)
+        expect(res.status).toBe(201);
+        console.log('body',res.body);
+        expect(res.body[0]).toBe(post_datas.turn);
+        expect(res.body[1]).toBe(post_datas.location_name);
+        expect(res.body[2]).toBe(post_datas.address);
+        expect(res.body[3]).toBe(post_datas.mapx);
+        expect(res.body[4]).toBe(post_datas.mapy);
+    })
+  });
 })
+
+// describe("post/location", () => {
+//   it("post/location", async () => {
+//     let post_datas = {
+//       turn:3,
+//       location_name:"post_name",
+//       address:"post",
+//       mapx:11,
+//       mapy:11
+//     };
+//     const res = await request(app)
+//       .post("/location")
+//       .set("Accept", "application/json")
+//       .send(post_datas)
+//       expect(res.status).toBe(201);
+//       expect(res.body).toStrictEqual(post_datas);
+//   })
+// });
+
+// xdescribe('DELETE /location/:id', () => {
+//   it('delete/location', async () => {
+//     let delete_datas = {
+//       turn:3,
+//       location_name:"삭제name",
+//       address:"삭제주소",
+//       mapx:11,
+//       mapy:11
+//     };
+//     let datas = [
+//       delete_datas.turn, delete_datas.location_name, delete_datas.address, delete_datas.mapx, delete_datas.mapy
+//     ];
+//     let delete_id = 1
+//     connection.query("insert into location values(null,?,?,?,?,?,now(),now())",datas, function (error, results, fields) {
+//       // delete_id = results
+//       console.log('results',results);
+//     });
+
+//     const res = await request(app)
+//       .delete(`/location/${delete_id}`)
+//     expect(res.status).toBe(200);
+//   })
+// })
+
+
