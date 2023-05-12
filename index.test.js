@@ -2,6 +2,8 @@ const app = require('./index');
 const request = require('supertest');
 const mysql = require('mysql');
 const Pool = require('mysql/lib/Pool');
+const { describe } = require('node:test');
+const { send } = require('process');
 require('dotenv').config();
 
 
@@ -35,7 +37,6 @@ describe('e2e_Test', () => {
 
   describe("get/location", () => {
     it('get_test', (done) => {
-      console.log('test')
       let get_datas = {
         turn:6,
         location_name:"tteesstt",
@@ -113,6 +114,52 @@ describe('e2e_Test', () => {
           }
         })
       });
+    })
+  })
+  describe("put/location", () => {
+    it('put/location', (done) => {
+      let fst_datas = {
+        turn:1,
+        location_name:"삭제name",
+        address:"삭제주소",
+        mapx:11,
+        mapy:11
+      };
+      let snd_datas = {
+        turn:2,
+        location_name:"삭제name",
+        address:"삭제주소",
+        mapx:11,
+        mapy:11
+      };
+      let datas = [
+        fst_datas.turn, fst_datas.location_name, fst_datas.address, fst_datas.mapx, fst_datas.mapy,
+        snd_datas.turn, snd_datas.location_name, snd_datas.address, snd_datas.mapx, snd_datas.mapy
+      ];
+      pool.query("insert into location values(null,?,?,?,?,?,now(),now()),(null,?,?,?,?,?,now(),now())",datas, (error, results, fields) => {
+        let send_datas = {
+          fst_id:results.insertId,
+          fst_turn:snd_datas.turn,
+          snd_id:results.insertId+1,
+          snd_turn:fst_datas.turn
+        }
+        request(app).put('/location').send(send_datas).expect(200).end((err, res) => {
+          if (err) {
+            console.log('put_error')
+            done(err);
+          } else {
+            expect(res.status).toBe(200);
+            pool.query("select id, turn from location", (error,results,fields) => {
+              expect(results[0].id).toBe(send_datas.fst_id);
+              expect(results[1].id).toBe(send_datas.snd_id);
+              expect(results[0].turn).toBe(snd_datas.turn);
+              expect(results[1].turn).toBe(fst_datas.turn);
+              done();
+            })
+          }
+        })
+      });
+
     })
   })
 })
