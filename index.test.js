@@ -48,6 +48,7 @@ describe('e2e_Test', () => {
       ];
       pool.query("insert into location values(null,?,?,?,?,?,now(),now())",datas, (error, results, fields) => {
           console.log('success db insert');
+          //end()는 jest에서 제공하는 테스트함수로, 비동기 함수가 끝날때 콜백함수를 실행할 수 있게 해준다. get요청의 응답이 도착하면 콜백함수 실행
           request(app).get("/location").expect(200).end((err, res) => {
             if (err) {
               done(err);
@@ -62,6 +63,7 @@ describe('e2e_Test', () => {
       );
     });
   });  
+
   describe("post/location", () => {
     it("post/location", async () => {
       let post_datas = {
@@ -81,51 +83,36 @@ describe('e2e_Test', () => {
         .get("/location")
         delete res.body[0].id
         expect(res.body[0]).toStrictEqual(post_datas)
-        // expect(res.status).toBe(201);
     })
   });
+
+  describe('DELETE /location/:id', () => {
+    it('delete/location', (done) => {
+      let delete_datas = {
+        turn:3,
+        location_name:"삭제name",
+        address:"삭제주소",
+        mapx:11,
+        mapy:11
+      };
+      let datas = [
+        delete_datas.turn, delete_datas.location_name, delete_datas.address, delete_datas.mapx, delete_datas.mapy
+      ];
+      pool.query("insert into location values(null,?,?,?,?,?,now(),now())",datas, (error, results, fields) => {
+        let delete_id = results.insertId;
+        request(app).delete(`/location${delete_id}`).expect(200).end((err, res) => {
+          if (err) {
+            console.log('request_error')
+            done(err);
+          } else {
+            expect(res.status).toBe(200);
+            pool.query("select turn from location where id = ?",delete_id, (error,results,fields) => {
+              expect(results).toStrictEqual([]);
+              done();
+            })
+          }
+        })
+      });
+    })
+  })
 })
-
-// describe("post/location", () => {
-//   it("post/location", async () => {
-//     let post_datas = {
-//       turn:3,
-//       location_name:"post_name",
-//       address:"post",
-//       mapx:11,
-//       mapy:11
-//     };
-//     const res = await request(app)
-//       .post("/location")
-//       .set("Accept", "application/json")
-//       .send(post_datas)
-//       expect(res.status).toBe(201);
-//       expect(res.body).toStrictEqual(post_datas);
-//   })
-// });
-
-// xdescribe('DELETE /location/:id', () => {
-//   it('delete/location', async () => {
-//     let delete_datas = {
-//       turn:3,
-//       location_name:"삭제name",
-//       address:"삭제주소",
-//       mapx:11,
-//       mapy:11
-//     };
-//     let datas = [
-//       delete_datas.turn, delete_datas.location_name, delete_datas.address, delete_datas.mapx, delete_datas.mapy
-//     ];
-//     let delete_id = 1
-//     connection.query("insert into location values(null,?,?,?,?,?,now(),now())",datas, function (error, results, fields) {
-//       // delete_id = results
-//       console.log('results',results);
-//     });
-
-//     const res = await request(app)
-//       .delete(`/location/${delete_id}`)
-//     expect(res.status).toBe(200);
-//   })
-// })
-
-
