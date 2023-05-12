@@ -68,7 +68,11 @@ app.post('/location', (req,res) => {
         console.log('db connection error');
         res.status(500).end();
       }
+      else if (module.parent) {
+        res.status(201).send(datas);
+      }
       res.status(201).end();
+      
     });
     connection.release();
   });
@@ -129,7 +133,6 @@ app.put('/location', (req,res) => {
     connection.release();
   });
 });
-
 
 //Node.js 모듈 시스템에서는, 모듈을 불러오는 require() 함수를 사용하여 다른 모듈을 가져올 수 있습니다. 이때, 불러온 모듈은 자체적인 스코프를 가지며, 이 스코프 내에서 전역 변수가 아닌 변수는 모두 지역 변수로 취급됩니다.
 //module.parent 변수는 현재 모듈을 불러온 부모 모듈을 가리키므로, module.parent === null 일 경우 현재 모듈이 직접 실행되었다는 것을 의미한다. 이를 이용하여, 다른 모듈에서 현재 모듈이 직접 실행되었는지, 아니면 다른 모듈에서 불러와서 사용되었는지를 구분할 수 있다.
