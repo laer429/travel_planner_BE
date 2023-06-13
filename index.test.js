@@ -26,6 +26,7 @@ describe('e2e_Test', () => {
 
   afterAll((done) => {
     console.log('afterAll_test');
+
     pool.end(done);
   });
   
@@ -35,8 +36,8 @@ describe('e2e_Test', () => {
     pool.query('delete from location',done);
   });
 
-  describe("get/location", () => {
-    it('get_test', (done) => {
+
+    it('get/locations', (done) => {
       let get_datas = {
         turn:6,
         location_name:"tteesstt",
@@ -63,9 +64,8 @@ describe('e2e_Test', () => {
         }
       );
     });
-  });  
 
-  describe("post/location", () => {
+
     it("post/location", async () => {
       let post_datas = {
         turn:4,
@@ -80,15 +80,20 @@ describe('e2e_Test', () => {
         .set("Accept", "application/json")
         .send(post_datas)
         expect(post_res.status).toBe(201);
-      const res = await request(app)
-        .get("/location")
-        delete res.body[0].id
-        expect(res.body[0]).toStrictEqual(post_datas)
-    })
-  });
+        pool.query("select turn, location_name, address, mapx, mapy from location", (error,results,fields) => {
+          const row_data_packet = results[0]
+          const result_object = JSON.parse(JSON.stringify(row_data_packet));//RowDataPacket을 js객체 형태로 바꾸기 위해 JSON.stringify()를 사용하여 JSON 문자열로 변환한 후, 다시 JSON.parse()를 사용하여 새로운 JavaScript 객체로 변환
+          expect(result_object).toStrictEqual(post_datas);
+        })
+    });
 
-  describe('DELETE /location/:id', () => {
-    it('delete/location', (done) => {
+
+
+
+
+
+
+    it('delete/location:id', (done) => {
       let delete_datas = {
         turn:3,
         location_name:"삭제name",
@@ -115,9 +120,9 @@ describe('e2e_Test', () => {
         })
       });
     })
-  })
-  describe("put/location", () => {
-    it('put/location', (done) => {
+
+
+    it('put/locations/turn', (done) => {
       let fst_datas = {
         turn:1,
         location_name:"삭제name",
@@ -161,5 +166,6 @@ describe('e2e_Test', () => {
       });
 
     })
-  })
-})
+  });
+
+
