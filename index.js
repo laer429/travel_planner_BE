@@ -28,7 +28,7 @@ const pool = mysql.createPool(conn);
 // connection.connect();
 
 //내 일정 부분에 일정 보여주기
-app.get('/location', (req,res) => {
+app.get('/locations', (req,res) => {
   pool.getConnection((err,connection) => {
     if(err) {
       console.log('pool.getConnection error');
@@ -103,7 +103,7 @@ app.delete('/location:id',(req,res) => {
 });
 
 //일정 순서 바꾸기
-app.put('/location', (req,res) => {
+app.put('/locations/turn', (req,res) => {
   let fst_datas = [
       req.body.fst_turn,
       req.body.fst_id

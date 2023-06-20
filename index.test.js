@@ -51,7 +51,7 @@ describe('e2e_Test', () => {
       pool.query("insert into location values(null,?,?,?,?,?,now(),now())",datas, (error, results, fields) => {
           console.log('success db insert');
           //end()는 jest에서 제공하는 테스트함수로, 비동기 함수가 끝날때 콜백함수를 실행할 수 있게 해준다. get요청의 응답이 도착하면 콜백함수 실행
-          request(app).get("/location").expect(200).end((err, res) => {
+          request(app).get("/locations").expect(200).end((err, res) => {
             if (err) {
               done(err);
             } else {
@@ -142,22 +142,23 @@ describe('e2e_Test', () => {
         snd_datas.turn, snd_datas.location_name, snd_datas.address, snd_datas.mapx, snd_datas.mapy
       ];
       pool.query("insert into location values(null,?,?,?,?,?,now(),now()),(null,?,?,?,?,?,now(),now())",datas, (error, results, fields) => {
-        let send_datas = {
+        let insert_data = {
           fst_id:results.insertId,
           fst_turn:snd_datas.turn,
           snd_id:results.insertId+1,
           snd_turn:fst_datas.turn
         }
-        request(app).put('/location').send(send_datas).expect(200).end((err, res) => {
+        request(app).put('/locations/turn').send(insert_data).expect(200).end((err, res) => {
           if (err) {
             console.log('put_error')
             done(err);
           } else {
             expect(res.status).toBe(200);
             pool.query("select id, turn from location", (error,results,fields) => {
-              expect(results[0].id).toBe(send_datas.fst_id);
-              expect(results[1].id).toBe(send_datas.snd_id);
+              //첫번째 id의 turn 이 두번째 id의 turn과 바뀌었는지 확인
+              expect(results[0].id).toBe(insert_data.fst_id);
               expect(results[0].turn).toBe(snd_datas.turn);
+              expect(results[1].id).toBe(insert_data.snd_id);
               expect(results[1].turn).toBe(fst_datas.turn);
               done();
             })
